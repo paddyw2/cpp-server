@@ -49,6 +49,9 @@ int server::start_server()
 
     // enter infinite server loop
     while(1) {
+        // create processor instance
+        processor command_processor;
+        printf("Waiting for a client connection\n");
         // accept new client connection
         newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr,&clilen);
 
@@ -56,24 +59,31 @@ int server::start_server()
         if (newsockfd < 0)
              error("ERROR on accept");
 
-        // clear buffer and read client input
-        bzero(buffer,256);
-        n = read(newsockfd,buffer,255);
+        int quit = 1;
+        while(quit != 0) {
+            // clear buffer and read client input
+            bzero(buffer,256);
+            n = read(newsockfd,buffer,255);
 
-        // error check
-        if (n < 0)
-            error("ERROR reading from socket");
+            // error check
+            if (n < 0)
+                error("ERROR reading from socket");
 
-        // notify server of successful message transfer
-        // and process the client request
-        printf("Received client input\n");
-        process_input(buffer);
-        // notify client of successfull message transfer
-        n = write(newsockfd,"I got your message\n",19);
+            // notify server of successful message transfer
+            // and process the client request
+            printf("Received client input\n");
 
-        // error check
-        if (n < 0)
-            error("ERROR writing to socket");
+            // notify client of successfull message transfer
+            n = write(newsockfd,"I got your message\n",19);
+
+            // process client information, if 0 returned
+            // then close client connection
+            quit = command_processor.parse(buffer);
+
+            // error check
+            if (n < 0)
+                error("ERROR writing to socket");
+        }
 
         // close client socket and loop
         // back to accept new connection
@@ -86,12 +96,6 @@ int server::stop_server()
 {
     cout << "Closing server socket" << endl;
     close(sockfd);
-    return 0;
-}
-
-int server::process_input(char * client_input)
-{
-    cout << "Processing..." << endl;
     return 0;
 }
 
