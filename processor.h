@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <vector>
+#include <string>
 #include <iostream>
+
+#define LINESIZE 512
 
 using namespace std;
 
@@ -9,7 +13,6 @@ class processor
 {
     public:
         processor();
-        int parse(char * user_input);
-        char * open_file(const char * command);
-
+        vector<string> parse(char * user_input);
+        vector<string> open_stdout(const char * command);
 };

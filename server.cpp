@@ -1,5 +1,11 @@
 #include "server.h"
 
+
+/*
+ * Constructor
+ * Creates initial server socket on
+ * specified port and address
+ */
 server::server(int argc, char * argv[])
 {
     // check command line arguments
@@ -36,15 +42,15 @@ server::server(int argc, char * argv[])
 }
 
 /*
+ * start_server()
  * Runs infinitely, waiting for and handling client
  * connections one at a time
  */
 int server::start_server()
 {
     // define variables
-    int newsockfd;
-    char buffer[256];
-    int n;
+    char buffer[BUFFERSIZE];
+    int error_flag;
     socklen_t clilen = sizeof(cli_addr);
 
     // enter infinite server loop
@@ -53,45 +59,42 @@ int server::start_server()
         processor command_processor;
         printf("Waiting for a client connection\n");
         // accept new client connection
-        newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr,&clilen);
+        clientsockfd = accept(sockfd, (struct sockaddr *) &cli_addr,&clilen);
 
         // error check
-        if (newsockfd < 0)
+        if (clientsockfd < 0)
              error("ERROR on accept");
 
-        int quit = 1;
-        while(quit != 0) {
+        while(1) {
             // clear buffer and read client input
-            bzero(buffer,256);
-            n = read(newsockfd,buffer,255);
-
-            // error check
-            if (n < 0)
-                error("ERROR reading from socket");
+            bzero(buffer,BUFFERSIZE);
+            read_from_client(buffer,BUFFERSIZE-1);
 
             // notify server of successful message transfer
             // and process the client request
             printf("Received client input\n");
 
-            // notify client of successfull message transfer
-            n = write(newsockfd,"I got your message\n",19);
+            // if command is 'quit', terminate connection
+            if(strcmp((const char *)buffer, "quit\n") == 0) {
+                char message[] = "Quiting program\n";
+                write_to_client(message, strlen(message)); 
+                break;
+            }
 
-            // process client information, if 0 returned
-            // then close client connection
-            quit = command_processor.parse(buffer);
-
-            // error check
-            if (n < 0)
-                error("ERROR writing to socket");
+            // else, send command to be processed
+            vector<string> command_output = command_processor.parse(buffer);
+            print_output_client(command_output);
         }
-
         // close client socket and loop
         // back to accept new connection
-        close(newsockfd);
+        close(clientsockfd);
     }
     return 0;
 }
 
+/*
+ * Closes the server
+ */
 int server::stop_server()
 {
     cout << "Closing server socket" << endl;
@@ -100,9 +103,82 @@ int server::stop_server()
 }
 
 /*
+ * Loops through the vector string and prints
+ * each line to the client as the result of
+ * their command
+ */
+int server::print_output_client(vector<string> output)
+{
+    // declare variables
+    string newline;
+    vector<string>::iterator itr;
+    // print divider
+    print_client_divider("Output");
+
+    // initialize iterator
+    itr = output.begin();
+
+    // loop through vector
+    while(itr != output.end()) {
+        newline = *itr;
+        char * line = (char *)newline.c_str();
+        int length = strlen(line);
+        // write a line to the client
+        write_to_client(line, length);
+        itr++;
+    }
+
+    // print divider
+    print_client_divider("Command");
+    return 0;
+}
+
+/*
+ * Writes to client socket and checks
+ * for errors
+ */
+int server::write_to_client(char * message, int length)
+{
+    int error_flag;
+    error_flag = write(clientsockfd, message, length); 
+    // error check
+    if (error_flag < 0)
+        error("ERROR writing to socket");
+    return 0;
+}
+
+/*
+ * Reads from client socket and checks
+ * for errors
+ */
+int server::read_from_client(char * message, int length)
+{
+    int error_flag;
+    error_flag = read(clientsockfd, message, length); 
+    // error check
+    if (error_flag < 0)
+        error("ERROR reading from socket");
+    return 0;
+}
+
+/*
+ * Prints a divider to the client screen with
+ * a header message specified by the paramter
+ */
+int server::print_client_divider(const char * message)
+{
+    char divider_start[] = "#------------------ ";
+    char divider_end[] = " ------------------#\n";
+
+    write_to_client(divider_start, strlen(divider_start)); 
+    write_to_client((char *)message, strlen(message)); 
+    write_to_client(divider_end, strlen(divider_end)); 
+    return 0;
+}
+
+/*
  * Error handler
  */
 void server::error(const char *msg) {
-    perror(msg);
-    exit(1);
+    perror(msg); exit(1);
 }
