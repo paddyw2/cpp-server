@@ -5,11 +5,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "processor.h"
 
 #include <vector>
 #include <string>
 #include <iostream>
+
+#include "commands.h"
+#include "processor.h"
 
 #define BUFFERSIZE 512
 

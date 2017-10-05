@@ -51,7 +51,10 @@ vector<string> processor::parse(char * user_input)
     vector<string>  command_output;
     // parse logic
     const char * user_command = (const char *)user_input;
-    command_output = open_stdout(user_command);
+    if(strcmp(user_command, HELP) == 0)
+        command_output = get_help();
+    else
+        command_output = open_stdout(user_command);
     cout << "Finished parsing" << endl;
     // if bad command, no stdout output
     // stderr instead, so output is empty
@@ -60,3 +63,16 @@ vector<string> processor::parse(char * user_input)
 
     return command_output;
 }
+
+/*
+ * Pushes standard help message to
+ * a vector string and returns it
+ */
+vector<string> processor::get_help()
+{
+    vector<string> output;
+    char line[] = "Help\nHere are some commands that you can use:\npwd: gets present working directory\n";
+    output.push_back(line);
+    return output;
+}
+    

@@ -5,6 +5,8 @@
 #include <string>
 #include <iostream>
 
+#include "commands.h"
+
 #define LINESIZE 512
 
 using namespace std;
@@ -15,4 +17,5 @@ class processor
         processor();
         vector<string> parse(char * user_input);
         vector<string> open_stdout(const char * command);
+        vector<string> get_help();
 };

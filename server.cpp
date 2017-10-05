@@ -74,12 +74,16 @@ int server::start_server()
             // and process the client request
             printf("Received client input\n");
 
-            // if command is 'quit', terminate connection
-            if(strcmp((const char *)buffer, "quit\n") == 0) {
+            // if client quits, terminate connection
+            if(strcmp((const char *)buffer, LOGOUT) == 0) {
                 char message[] = "Quiting program\n";
                 write_to_client(message, strlen(message)); 
                 break;
             }
+
+            // if client sends server kill command, quit server
+            if(strcmp((const char *)buffer, KILL) == 0)
+                stop_server();
 
             // else, send command to be processed
             vector<string> command_output = command_processor.parse(buffer);
@@ -99,7 +103,7 @@ int server::stop_server()
 {
     cout << "Closing server socket" << endl;
     close(sockfd);
-    return 0;
+    exit(EXIT_SUCCESS);
 }
 
 /*
