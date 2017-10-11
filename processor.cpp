@@ -50,11 +50,15 @@ vector<string> processor::parse(char * user_input)
     cout << "Parsing user input" << endl;
     vector<string>  command_output;
     // parse logic
-    const char * user_command = (const char *)user_input;
-    if(strcmp(user_command, HELP) == 0)
+    char stderr_redirect[] = " 2>&1\n";
+    char command[strlen(stderr_redirect)+strlen(user_input)];
+    bzero(command, sizeof(command));
+    memcpy(command, user_input, strlen(user_input)-2);
+    memcpy(command+strlen(user_input)-2,stderr_redirect, strlen(stderr_redirect));
+    if(strcmp(command, HELP) == 0)
         command_output = get_help();
     else
-        command_output = open_stdout(user_command);
+        command_output = open_stdout(command);
     cout << "Finished parsing" << endl;
     // if bad command, no stdout output
     // stderr instead, so output is empty
