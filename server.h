@@ -28,8 +28,8 @@ class server
         int write_to_client(char * message, int length);
         int read_from_client(char * message, int length);
         int print_client_divider(const char * message);
+        int strip_newline(char * input, int max);
         void error(const char *msg);
-
 
     private:
         int sockfd;
@@ -38,3 +38,4 @@ class server
         struct sockaddr_in serv_addr;
         struct sockaddr_in cli_addr;
 };
+

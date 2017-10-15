@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include <vector>
 #include <string>
@@ -9,6 +11,7 @@
 #include "commands.h"
 
 #define LINESIZE 512
+#define BUFFER_SIZE 256
 
 using namespace std;
 
@@ -19,4 +22,12 @@ class processor
         vector<string> parse(char * user_input);
         vector<string> open_stdout(const char * command);
         vector<string> get_help();
+        vector<string> change_dir(char * command);
+        vector<string> create_snapshot(vector<string> file_list);
+        int save_snapshot(vector<string> new_snapshot);
+        vector<string> create_diff(vector<string> file_list);
+
+    private:
+        char current_dir[BUFFER_SIZE];
+        vector<string> snapshot;
 };

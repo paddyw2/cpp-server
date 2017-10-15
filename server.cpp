@@ -57,7 +57,7 @@ int server::start_server()
     while(1) {
         // create processor instance
         processor command_processor;
-        printf("Waiting for a client connection\n");
+        cout << "Waiting for a client connection" << endl;
         // accept new client connection
         clientsockfd = accept(sockfd, (struct sockaddr *) &cli_addr,&clilen);
 
@@ -72,7 +72,7 @@ int server::start_server()
 
             // notify server of successful message transfer
             // and process the client request
-            printf("Received client input\n");
+            cout << "Received client input" << endl;
 
             // if client quits, terminate connection
             if(strcmp((const char *)buffer, LOGOUT) == 0) {
@@ -159,6 +159,7 @@ int server::read_from_client(char * message, int length)
 {
     int error_flag;
     error_flag = read(clientsockfd, message, length); 
+    strip_newline(message, length);
     // error check
     if (error_flag < 0)
         error("ERROR reading from socket");
@@ -177,6 +178,20 @@ int server::print_client_divider(const char * message)
     write_to_client(divider_start, strlen(divider_start)); 
     write_to_client((char *)message, strlen(message)); 
     write_to_client(divider_end, strlen(divider_end)); 
+    return 0;
+}
+
+/*
+ * Strip new line from string
+ */
+int server::strip_newline(char * input, int max)
+{
+    if(input[strlen(input)-1] == '\n')
+        input[strlen(input)-1] = 0;
+
+    if(input[strlen(input)-1] == '\r')
+        input[strlen(input)-1] = 0;
+
     return 0;
 }
 
