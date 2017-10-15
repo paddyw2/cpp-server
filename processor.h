@@ -21,7 +21,7 @@ class processor
         processor();
         vector<string> parse(char * user_input);
         vector<string> open_stdout(const char * command);
-        vector<string> get_help();
+        vector<string> get_help(char * user_input);
         vector<string> change_dir(char * command);
         vector<string> create_snapshot(vector<string> file_list);
         vector<string> save_snapshot(vector<string> new_snapshot);

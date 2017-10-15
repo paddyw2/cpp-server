@@ -10,7 +10,6 @@ processor::processor()
     // starting working directory
     bzero(current_dir, BUFFER_SIZE);
     getcwd(current_dir, BUFFER_SIZE);
-    cout << current_dir << endl;
     snapshot_exists = 0;
 }
 
@@ -121,8 +120,10 @@ vector<string> processor::create_diff(vector<string> file_list)
                     // file is unchanged
                 } else {
                     // file changed
-                    diff.push_back(*itr_list);
-                    diff.push_back(" --> File changed\n");
+                    string temp = *itr_list;
+                    temp[temp.length()-1] = 0;
+                    diff.push_back(temp);
+                    diff.push_back("\t--> File changed\n");
                 }
             } else {
                 // continue searching
@@ -132,8 +133,10 @@ vector<string> processor::create_diff(vector<string> file_list)
         }
         if(file_found == 0) {
             // must be a new file
-            diff.push_back(*itr_list);
-            diff.push_back(" --> File added\n");
+            string temp = *itr_list;
+            temp[temp.length()-1] = 0;
+            diff.push_back(temp);
+            diff.push_back("\t--> File added\n");
            
         }
         // increment over hashes
@@ -164,8 +167,10 @@ vector<string> processor::create_diff(vector<string> file_list)
         // it must have been deleted
         if(file_found == 0) {
             // file must be deleted
-            diff.push_back(*itr_snap);
-            diff.push_back(" --> File deleted\n");
+            string temp = *itr_snap;
+            temp[temp.length()-1] = 0;
+            diff.push_back(temp);
+            diff.push_back("\t--> File deleted\n");
         }
         itr_snap += 2;
     }
@@ -206,8 +211,6 @@ vector<string> processor::create_snapshot(vector<string> file_list)
         current_file = *itr;
         // check if current file is a directory
         if(check_if_file(current_file.c_str()) != 1) {
-            cout << "Detecting!!!!!" << endl;
-            cout << check_if_file(current_file.c_str())  << endl;
             itr++;
             continue;
         }
@@ -234,6 +237,13 @@ vector<string> processor::create_snapshot(vector<string> file_list)
     return local_snapshot;
 }
 
+/*
+ * Assumes the first three chars of the the command
+ * are "cd " and processes the destination directory
+ * accordingly
+ * Once the chdir command has been executed the
+ * current directory variable is updated
+ */
 vector<string> processor::change_dir(char * command)
 {
     vector<string> output;
@@ -241,7 +251,6 @@ vector<string> processor::change_dir(char * command)
     char directory[dir_size];
     bzero(directory, dir_size);
     cout << "###--- Custom ---###" << endl;
-        cout << current_dir << endl;
     // check if valid cd command
     // must specific a directory
     if(command[2] != ' ') {
@@ -254,21 +263,25 @@ vector<string> processor::change_dir(char * command)
     } else {
         // relative path given, so append
         // to cwd
-        cout << current_dir << endl;
         memcpy(directory, current_dir, strlen(current_dir));
         directory[strlen(current_dir)] = '/';
         memcpy(directory+strlen(current_dir)+1, command+3, strlen(command)-3);
     }
-
+    // change to that directory
+    int error = chdir(directory);
     // update current working directory
     bzero(current_dir, BUFFER_SIZE);
-    memcpy(current_dir, directory, strlen(directory));
+    getcwd(current_dir, BUFFER_SIZE);
+    cout << current_dir << endl;
 
-    // change to that directory
-    chdir(directory);
-    output.push_back("New directory: ");
-    output.push_back(directory);
-    output.push_back("\n");
+    // return relevant message
+    if(error != -1) {
+        output.push_back("New directory: ");
+        output.push_back(current_dir);
+        output.push_back("\n");
+    } else {
+        output.push_back("Invalid directory\n");
+    }
     return output;
 }
 
@@ -335,9 +348,9 @@ vector<string> processor::parse(char * user_input)
 
     // main parsing logic where the user
     // input is processed
-    if(strncmp(user_input, "help", 5) == 0) {
+    if(strncmp(user_input, "help", 4) == 0) {
         // print help message
-        command_output = get_help();
+        command_output = get_help(user_input);
     } else if(strncmp(user_input, "cd", 2) == 0) {
         // delegate processing to change_dir()
         command_output = change_dir(user_input);
@@ -362,7 +375,7 @@ vector<string> processor::parse(char * user_input)
     // if command finishes silently, let
     // user know
     if(command_output.size() < 1)
-        command_output.push_back("[no output]\n");
+        command_output.push_back("OK\n");
 
     return command_output;
 }
@@ -371,10 +384,50 @@ vector<string> processor::parse(char * user_input)
  * Pushes standard help message to
  * a vector string and returns it
  */
-vector<string> processor::get_help()
+vector<string> processor::get_help(char * user_input)
 {
+
     vector<string> output;
-    char line[] = HELP_TEXT;
-    output.push_back(line);
+    // check if command is valid or just 'help'
+    if(strncmp(user_input, "help", 5) == 0) {
+        output.push_back(HELP_TEXT);
+        return output;
+    } else if(strncmp(user_input, "help ", 5) != 0) {
+        output.push_back("Invalid command\n");
+        return output;
+    }
+
+    // create start and ends to command
+    char base_cmd[] = "man ";
+    char end_cmd[] = " 2>&1\n";
+    
+    // concatenate the command provided in the form "man [command] 2>&1"
+    char full_command[strlen(base_cmd) + strlen(user_input) + strlen(end_cmd)+1];
+    bzero(full_command,strlen(base_cmd) + strlen(user_input)+ strlen(end_cmd)+1); 
+    memcpy(full_command, base_cmd, strlen(base_cmd));
+    memcpy(full_command + strlen(base_cmd), user_input+5, strlen(user_input)-5);
+    memcpy(full_command + strlen(base_cmd) + strlen(user_input)-5, end_cmd, strlen(end_cmd));
+
+    // check for special help case that man
+    // does not apply for (i.e. custom commands
+    // or commands with restrictions)
+    // if some other command, send it to man
+    // i.e. "man mkdir"
+    if(strncmp(user_input+5, "snap", 5) == 0)
+        output.push_back(SNAP_INFO);
+    else if(strncmp(user_input+5, "diff", 5) == 0)
+        output.push_back(DIFF_INFO);
+    else if(strncmp(user_input+5, "cd", 3) == 0)
+        output.push_back(CD_INFO);
+    else if(strncmp(user_input+5, "off", 4) == 0)
+        output.push_back(OFF_INFO);
+    else if(strncmp(user_input+5, "logout", 7) == 0)
+        output.push_back(LOGOUT_INFO);
+    else if(strncmp(user_input+5, "help", 5) == 0)
+        output.push_back(HELP_INFO);
+    else
+        output = open_stdout(full_command);
+
+    // return the help command response
     return output;
 }

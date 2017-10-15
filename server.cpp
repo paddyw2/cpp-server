@@ -1,6 +1,5 @@
 #include "server.h"
 
-
 /*
  * Constructor
  * Creates initial server socket on
@@ -39,10 +38,12 @@ server::server(int argc, char * argv[])
     // start listening for connections on the
     // created socket
     listen(sockfd,5);
+
+    set_password();
 }
 
 /*
- * start_server()
+ * 
  * Runs infinitely, waiting for and handling client
  * connections one at a time
  */
@@ -52,20 +53,27 @@ int server::start_server()
     char buffer[BUFFERSIZE];
     int error_flag;
     socklen_t clilen = sizeof(cli_addr);
+    processor command_processor;
 
     // enter infinite server loop
     while(1) {
-        // create processor instance
-        processor command_processor;
         cout << "Waiting for a client connection" << endl;
         // accept new client connection
         clientsockfd = accept(sockfd, (struct sockaddr *) &cli_addr,&clilen);
 
         // error check
         if (clientsockfd < 0)
-             error("ERROR on accept");
+           error("ERROR on accept");
 
-        while(1) {
+        // authorize client
+        int authorized = -1; 
+        authorized = authenticate();
+        if(authorized != -1) {
+            char welcome[] = "Welcome to the server, type 'help' for a list of commands\n";
+            write_to_client(welcome, strlen(welcome));
+        }
+
+        while(authorized != -1) {
             // clear buffer and read client input
             bzero(buffer,BUFFERSIZE);
             read_from_client(buffer,BUFFERSIZE-1);
@@ -93,6 +101,51 @@ int server::start_server()
         // back to accept new connection
         close(clientsockfd);
     }
+    return 0;
+}
+
+/*
+ * Prompts standard input to set the
+ * server password
+ */
+int server::set_password()
+{
+    bzero(password,BUFFERSIZE);
+    cout << "Set the server password: ";
+    cin >> password;
+    cout << "Password set" << endl;
+    return 0;
+}
+
+/*
+ * Prompt client to enter a password, and
+ * check if it is same as server password
+ */
+int server::authenticate()
+{
+    char buffer[BUFFERSIZE];
+    bzero(buffer,BUFFERSIZE);
+    char message[] = "Welcome to Server 1.0\nPlease enter you password: ";
+    write_to_client(message, strlen(message));
+    read_from_client(buffer,BUFFERSIZE-1);
+    cout << buffer << endl;
+    // compare password to user input
+    // first, check length
+    int password_len = strlen(password);
+    if(strlen(buffer) != password_len) {
+        cout << "Invalid login attempt" << endl;
+        return -1;
+    }
+
+    // now check content
+    for(int i=0;i<password_len;i++) {
+        if(buffer[i] != password[i]) {
+            cout << "Invalid login attempt" << endl;
+            return -1;
+        }
+    }
+    // if no differences encountered, indicate
+    // success
     return 0;
 }
 
@@ -182,7 +235,8 @@ int server::print_client_divider(const char * message)
 }
 
 /*
- * Strip new line from string
+ * Strip new line and carriage return
+ * from string
  */
 int server::strip_newline(char * input, int max)
 {
