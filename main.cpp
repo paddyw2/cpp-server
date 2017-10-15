@@ -2,7 +2,7 @@
 
 int main(int argc, char * argv[])
 {
-    cout << "Backdoor Server" << endl;
+    cout << "Remote server" << endl;
     server new_server(argc, argv);
     new_server.start_server();
     return 0;

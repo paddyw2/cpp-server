@@ -28,7 +28,7 @@ class server
         int print_output_client(vector<string> output);
         int write_to_client(char * message, int length);
         int read_from_client(char * message, int length);
-        int print_client_divider(const char * message);
+        int print_client_prompt();
         int strip_newline(char * input, int max);
         void error(const char *msg);
         int set_password();

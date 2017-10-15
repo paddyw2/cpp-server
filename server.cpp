@@ -74,6 +74,7 @@ int server::start_server()
         }
 
         while(authorized != -1) {
+            print_client_prompt();
             // clear buffer and read client input
             bzero(buffer,BUFFERSIZE);
             read_from_client(buffer,BUFFERSIZE-1);
@@ -125,7 +126,7 @@ int server::authenticate()
 {
     char buffer[BUFFERSIZE];
     bzero(buffer,BUFFERSIZE);
-    char message[] = "Welcome to Server 1.0\nPlease enter you password: ";
+    char message[] = "Please enter you password: ";
     write_to_client(message, strlen(message));
     read_from_client(buffer,BUFFERSIZE-1);
     cout << buffer << endl;
@@ -169,8 +170,6 @@ int server::print_output_client(vector<string> output)
     // declare variables
     string newline;
     vector<string>::iterator itr;
-    // print divider
-    print_client_divider("Output");
 
     // initialize iterator
     itr = output.begin();
@@ -185,8 +184,6 @@ int server::print_output_client(vector<string> output)
         itr++;
     }
 
-    // print divider
-    print_client_divider("Command");
     return 0;
 }
 
@@ -220,17 +217,12 @@ int server::read_from_client(char * message, int length)
 }
 
 /*
- * Prints a divider to the client screen with
- * a header message specified by the paramter
+ * Prints the client shell prompt
  */
-int server::print_client_divider(const char * message)
+int server::print_client_prompt()
 {
-    char divider_start[] = "#------------------ ";
-    char divider_end[] = " ------------------#\n";
-
-    write_to_client(divider_start, strlen(divider_start)); 
-    write_to_client((char *)message, strlen(message)); 
-    write_to_client(divider_end, strlen(divider_end)); 
+    char msg[] = "> ";
+    write_to_client(msg, strlen(msg));
     return 0;
 }
 
