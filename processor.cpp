@@ -11,6 +11,7 @@ processor::processor()
     bzero(current_dir, BUFFER_SIZE);
     getcwd(current_dir, BUFFER_SIZE);
     cout << current_dir << endl;
+    snapshot_exists = 0;
 }
 
 /*
@@ -45,7 +46,7 @@ int processor::check_if_file(const char * filename)
  * Takes a temporary snapshot and saves it
  * as the latest snapshot
  */
-int processor::save_snapshot(vector<string> new_snapshot)
+vector<string> processor::save_snapshot(vector<string> new_snapshot)
 {
     // clear old snapshot
     snapshot.clear();
@@ -62,7 +63,14 @@ int processor::save_snapshot(vector<string> new_snapshot)
         snapshot.push_back(current_line);
         itr++;
     }
-    return 0;
+
+    // indicate that a snapshot has been saved
+    snapshot_exists = 1;
+
+    // return success message
+    vector<string> success;
+    success.push_back("Snapshot saved\n");
+    return success;
 }
 
 
@@ -81,6 +89,12 @@ vector<string> processor::create_diff(vector<string> file_list)
     string current_line;
     string snap_line;
     int file_found;
+
+    // first check if snapshot exists
+    if(snapshot_exists == 0) {
+        diff.push_back("No snapshot exists\n");
+        return diff;
+    }
 
     /* Check for added or new files */
     // initialize iterator
@@ -155,6 +169,9 @@ vector<string> processor::create_diff(vector<string> file_list)
         }
         itr_snap += 2;
     }
+    // check if nothing to report
+    if(diff.size() < 1)
+        diff.push_back("No changes\n");
 
     // return a vector with the affected
     // files and their status
@@ -329,7 +346,7 @@ vector<string> processor::parse(char * user_input)
         // and create a snapshot from them
         vector<string> file_list = open_stdout("ls");
         command_output = create_snapshot(file_list);
-        save_snapshot(command_output);
+        command_output = save_snapshot(command_output);
     } else if(strncmp(user_input, "diff", 5) == 0) {
         // get a list of current directory files
         // and create a diff status
