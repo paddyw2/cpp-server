@@ -423,6 +423,22 @@ vector<string> processor::get_help(char * user_input)
         output.push_back(OFF_INFO);
     else if(strncmp(user_input+5, "logout", 7) == 0)
         output.push_back(LOGOUT_INFO);
+    else if(strncmp(user_input+5, "pwd", 4) == 0)
+        output.push_back(PWD_INFO);
+    else if(strncmp(user_input+5, "ls", 3) == 0)
+        output.push_back(LS_INFO);
+    else if(strncmp(user_input+5, "cp", 3) == 0)
+        output.push_back(CP_INFO);
+    else if(strncmp(user_input+5, "cat", 3) == 0)
+        output.push_back(CP_INFO);
+    else if(strncmp(user_input+5, "rm", 3) == 0)
+        output.push_back(RM_INFO);
+    else if(strncmp(user_input+5, "mv", 3) == 0)
+        output.push_back(MV_INFO);
+    else if(strncmp(user_input+5, "ps", 3) == 0)
+        output.push_back(PS_INFO);
+    else if(strncmp(user_input+5, "who", 3) == 0)
+        output.push_back(WHO_INFO);
     else if(strncmp(user_input+5, "help", 5) == 0)
         output.push_back(HELP_INFO);
     else
