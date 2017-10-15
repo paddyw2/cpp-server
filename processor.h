@@ -26,6 +26,7 @@ class processor
         vector<string> create_snapshot(vector<string> file_list);
         int save_snapshot(vector<string> new_snapshot);
         vector<string> create_diff(vector<string> file_list);
+        int check_if_file(const char * filename);
 
     private:
         char current_dir[BUFFER_SIZE];

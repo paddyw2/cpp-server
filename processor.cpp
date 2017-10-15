@@ -1,5 +1,9 @@
 #include "processor.h"
 
+/*
+ * Constuctor: Sets the intial present
+ * working directory
+ */
 processor::processor()
 {
     // create class and set
@@ -9,6 +13,38 @@ processor::processor()
     cout << current_dir << endl;
 }
 
+/*
+ * Takes a local file path and returns
+ * 1 if it is a regular file, and 0
+ * if it is something else (such as a
+ * directory or sym link)
+ */
+int processor::check_if_file(const char * filename)
+{
+    // create a buffer for full string path
+    // and zero it
+    char full_path[strlen(filename) + strlen(current_dir) + 1];
+    bzero(full_path,strlen(filename) + strlen(current_dir) + 1); 
+    // copy base path to buffer
+    memcpy(full_path, current_dir, strlen(current_dir));
+    // add trailing slash
+    full_path[strlen(current_dir)] = '/';
+    // now copy filename to end, removing the newline character
+    memcpy(full_path+strlen(current_dir) + 1, filename, strlen(filename)-1);
+
+    // create stat structure
+    struct stat filename_stat;
+    // set its file path
+    stat(full_path,&filename_stat);
+    // check if regular file and return status
+    int status = S_ISREG(filename_stat.st_mode);
+    return status;
+}
+
+/*
+ * Takes a temporary snapshot and saves it
+ * as the latest snapshot
+ */
 int processor::save_snapshot(vector<string> new_snapshot)
 {
     // clear old snapshot
@@ -30,6 +66,13 @@ int processor::save_snapshot(vector<string> new_snapshot)
 }
 
 
+/*
+ * Compares a temporary snapshot of the current
+ * directory status with the saved snapshot
+ * Any changes, additions, or deletions are
+ * returned in a vector<string> to print to
+ * the client as a status
+ */
 vector<string> processor::create_diff(vector<string> file_list)
 {
     vector<string> diff;
@@ -39,6 +82,7 @@ vector<string> processor::create_diff(vector<string> file_list)
     string snap_line;
     int file_found;
 
+    /* Check for added or new files */
     // initialize iterator
     itr_list = file_list.begin();
 
@@ -117,6 +161,18 @@ vector<string> processor::create_diff(vector<string> file_list)
     return diff;
 }
 
+/*
+ * Takes a list of current files in the current
+ * directory as input and for each regular file
+ * it creates a sha256 hash digest
+ * The filename and hashes are stored in the list
+ * as follows:
+ * filename1, hash1, filename2, hash2, ...
+ * The result is returned and can be used as
+ * either the new snapshot to be saved, or as a
+ * comparision snapshot for the create_diff()
+ * function
+ */
 vector<string> processor::create_snapshot(vector<string> file_list)
 {
     cout << "Preparing..." << endl;
@@ -132,6 +188,12 @@ vector<string> processor::create_snapshot(vector<string> file_list)
     while(itr != file_list.end()) {
         current_file = *itr;
         // check if current file is a directory
+        if(check_if_file(current_file.c_str()) != 1) {
+            cout << "Detecting!!!!!" << endl;
+            cout << check_if_file(current_file.c_str())  << endl;
+            itr++;
+            continue;
+        }
         // to do 
         char * file = (char *)current_file.c_str();
         // remove new line
@@ -195,7 +257,8 @@ vector<string> processor::change_dir(char * command)
 
 /*
  * opens a file in the current directoy by name
- * and returns its contents as an unsigned char * */
+ * and returns its contents as an unsigned char *
+ */
 vector<string> processor::open_stdout(const char * command)
 {
     // initialize variables
@@ -228,24 +291,33 @@ vector<string> processor::open_stdout(const char * command)
 }
 
 /*
- * Takes user command, checks it, executes it on
- * the server, the returns the output in the form
+ * Takes user command, checks it, and
+ * delegates to a particular function
+ * It returns the output in the form
  * of a string vector, line per line
  */
 vector<string> processor::parse(char * user_input)
 {
     cout << "Command: " << user_input << endl;
     vector<string>  command_output;
-    // parse logic
+
+    // direct stderr to stdin to get a verbose
+    // reponse
     char stderr_redirect[] = " 2>&1\n";
+
+    // concatenate user command with stderr
+    // redirection to get a full command
     int size1 = strlen(stderr_redirect);
     int size2 = strlen(user_input);
     char command[size1+size2+1];
 
+    // copy the strings
     bzero(command, size1+size2+1);
     memcpy(command, user_input, size2);
     memcpy(command+size2,stderr_redirect, size1);
 
+    // main parsing logic where the user
+    // input is processed
     if(strncmp(user_input, "help", 5) == 0) {
         // print help message
         command_output = get_help();
@@ -265,11 +337,13 @@ vector<string> processor::parse(char * user_input)
         vector<string> local_snap = create_snapshot(file_list);
         command_output = create_diff(local_snap);
     } else {
+        // if not covered by the above cases, simply
+        // execute the command in the shell
         command_output = open_stdout(command);
     }
-    cout << "Finished parsing" << endl;
-    // if bad command, no stdout output
-    // stderr instead, so output is empty
+
+    // if command finishes silently, let
+    // user know
     if(command_output.size() < 1)
         command_output.push_back("[no output]\n");
 
